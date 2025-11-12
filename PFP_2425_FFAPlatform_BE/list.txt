@@ -1,0 +1,121 @@
+卷 新加卷 的文件夹 PATH 列表
+卷序列号为 54AE-CDC0
+D:.
+│  .gitattributes
+│  .gitignore
+│  HELP.md
+│  list.txt
+│  mvnw
+│  mvnw.cmd
+│  pom.xml
+│  
+├─.idea
+│      compiler.xml
+│      encodings.xml
+│      jarRepositories.xml
+│      misc.xml
+│      workspace.xml
+│      
+├─.mvn
+│  └─wrapper
+│          maven-wrapper.properties
+│          
+├─src
+│  ├─main
+│  │  ├─java
+│  │  │  └─com
+│  │  │      └─ffa
+│  │  │          │  Pfp2425FfaPlatformBeApplication.java
+│  │  │          │  
+│  │  │          ├─config
+│  │  │          │      CorsConfig.java
+│  │  │          │      
+│  │  │          ├─controller
+│  │  │          │      AdminCountryController.java
+│  │  │          │      HealthController.java
+│  │  │          │      
+│  │  │          ├─domain
+│  │  │          │      Country.java
+│  │  │          │      
+│  │  │          ├─PFP_2425_FFAPlatform_BE
+│  │  │          ├─repository
+│  │  │          │      CountryRepository.java
+│  │  │          │      
+│  │  │          └─service
+│  │  │                  CountryService.java
+│  │  │                  
+│  │  └─resources
+│  │      │  application.yml
+│  │      │  
+│  │      ├─static
+│  │      └─templates
+│  └─test
+│      └─java
+│          └─com
+│              └─ffa
+│                  └─PFP_2425_FFAPlatform_BE
+│                          Pfp2425FfaPlatformBeApplicationTests.java
+│                          
+└─target
+    │  PFP_2425_FFAPlatform_BE-0.0.1-SNAPSHOT.jar
+    │  PFP_2425_FFAPlatform_BE-0.0.1-SNAPSHOT.jar.original
+    │  
+    ├─classes
+    │  │  application.yml
+    │  │  
+    │  └─com
+    │      └─ffa
+    │          │  Pfp2425FfaPlatformBeApplication.class
+    │          │  
+    │          ├─config
+    │          │      CorsConfig.class
+    │          │      
+    │          ├─controller
+    │          │      AdminCountryController.class
+    │          │      HealthController.class
+    │          │      
+    │          ├─domain
+    │          │      Country$CountryBuilder.class
+    │          │      Country.class
+    │          │      
+    │          ├─PFP_2425_FFAPlatform_BE
+    │          ├─repository
+    │          │      CountryRepository.class
+    │          │      
+    │          └─service
+    │                  CountryService.class
+    │                  
+    ├─generated-sources
+    │  └─annotations
+    ├─generated-test-sources
+    │  └─test-annotations
+    ├─maven-archiver
+    │      pom.properties
+    │      
+    ├─maven-status
+    │  └─maven-compiler-plugin
+    │      ├─compile
+    │      │  └─default-compile
+    │      │          createdFiles.lst
+    │      │          inputFiles.lst
+    │      │          
+    │      └─testCompile
+    │          └─default-testCompile
+    │                  createdFiles.lst
+    │                  inputFiles.lst
+    │                  
+    ├─surefire-reports
+    │      2025-11-07T20-36-33_276.dumpstream
+    │      2025-11-07T20-40-59_271.dumpstream
+    │      2025-11-07T20-43-18_355.dumpstream
+    │      2025-11-07T20-58-44_627.dumpstream
+    │      2025-11-07T21-09-31_361.dumpstream
+    │      com.ffa.PFP_2425_FFAPlatform_BE.Pfp2425FfaPlatformBeApplicationTests.txt
+    │      TEST-com.ffa.PFP_2425_FFAPlatform_BE.Pfp2425FfaPlatformBeApplicationTests.xml
+    │      
+    └─test-classes
+        └─com
+            └─ffa
+                └─PFP_2425_FFAPlatform_BE
+                        Pfp2425FfaPlatformBeApplicationTests.class
+                        

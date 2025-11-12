@@ -1,0 +1,23 @@
+# =============== Node/React===============
+/node_modules
+/build
+.env
+.DS_Store
+
+# =============== Java/Spring Boot===============
+/target
+.idea/
+.vscode/
+*.iml
+*.class
+# Log files
+*.log
+# Maven
+/pom.xml.tag
+/pom.xml.releaseBackup
+/pom.xml.versionsBackup
+/pom.xml.next
+/pom.xml.bak
+release.properties
+/rebel.xml
+/logs/

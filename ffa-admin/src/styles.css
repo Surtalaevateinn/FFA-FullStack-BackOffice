@@ -1,0 +1,137 @@
+<style>
+:root{
+  /* ====== 统一蓝色调 ====== */
+  --bg:#eaf1ff;              /* sidebar 背景 */
+  --fg:#f5f7fb;              /* 页面背景 */
+  --card:#ffffff;
+  --muted:#64748b;
+  --text:#0f172a;
+  --primary:#2563eb;         /* 主蓝 */
+  --primary-600:#1d4ed8;
+  --danger:#dc2626;
+  --danger-600:#b91c1c;
+  --success:#16a34a;
+  --warning:#f59e0b;
+  --ring:#dbeafe;
+  --border:#e2e8f0;
+  --shadow:0 8px 24px rgba(37,99,235,.08), 0 2px 8px rgba(37,99,235,.06);
+  --radius:12px;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font:14px/1.45 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+  color:var(--text);
+  background:var(--fg);
+}
+
+  /* Shell */
+  .app{
+    display:grid; grid-template-columns: 260px 1fr; min-height:100vh;
+  }
+  .sidebar{
+    background:var(--bg); color:#cbd5e1; padding:18px; position:sticky; top:0; height:100vh;
+    display:flex; flex-direction:column; gap:16px;
+  }
+  .brand{color:#fff; font-weight:700; letter-spacing:.3px; display:flex; align-items:center; gap:8px}
+  .brand .dot{width:10px;height:10px;border-radius:999px;background:linear-gradient(135deg,#60a5fa,#34d399)}
+  .nav{display:flex; flex-direction:column; gap:6px; margin-top:6px}
+  .nav a{
+    color:#cbd5e1; text-decoration:none; padding:10px 12px; border-radius:10px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .nav a.active, .nav a:hover{background:#1e293b; color:#fff}
+  .nav .sep{height:1px; background:#1f2937; margin:8px 0}
+
+  .main{
+    display:grid; grid-template-rows: auto 1fr;
+  }
+  .topbar{
+    background:#fff; border-bottom:1px solid var(--border); padding:10px 16px; display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:5;
+  }
+  .topbar .actions{display:flex; gap:8px; align-items:center;}
+  .avatar{width:28px; height:28px; border-radius:9999px; background:#e2e8f0}
+  .content{padding:20px; max-width:1280px}
+
+  /* Components */
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow)}
+  .panel{padding:16px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius)}
+  .grid{display:grid; gap:16px}
+  .grid-2{grid-template-columns:repeat(2,1fr)}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  .kpi{padding:16px}
+  .kpi h3{margin:0 0 8px 0; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted)}
+  .kpi .num{font-size:22px; font-weight:700}
+
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; border:1px solid transparent; background:#fff; color:var(--text);
+    padding:8px 12px; border-radius:10px; cursor:pointer; transition:.15s all ease-in-out;
+  }
+  .btn:focus{outline:none; box-shadow:0 0 0 3px var(--ring)}
+  .btn:hover{transform:translateY(-1px)}
+  .btn.primary{background:var(--primary); color:#fff}
+  .btn.primary:hover{background:var(--primary-600)}
+  .btn.ghost{background:#fff; border-color:var(--border)}
+  .btn.danger{background:var(--danger); color:#fff}
+  .btn.danger:hover{background:var(--danger-600)}
+  .btn.icon{padding:8px}
+
+  .toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:12px; flex-wrap:wrap}
+  .filters{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  label{font-size:12px; color:var(--muted)}
+  .field{display:flex; flex-direction:column; gap:6px}
+  input[type="text"], input[type="email"], input[type="password"], input[type="date"], select, textarea{
+    padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:#fff; box-shadow:inset 0 1px 0 rgba(2,8,23,.02);
+  }
+  textarea{min-height:120px; resize:vertical}
+  .help{font-size:12px; color:var(--muted)}
+
+  table{width:100%; border-collapse:collapse; overflow:hidden; border-radius:12px; background:#fff; border:1px solid var(--border)}
+  th,td{padding:12px; text-align:left; border-bottom:1px solid var(--border)}
+  thead th{font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); background:#fafafa}
+  tr:hover td{background:#fcfcff}
+  .status{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; font-size:12px}
+  .status.pending{background:#fff7ed; color:#c2410c}
+  .status.active{background:#ecfeff; color:#0e7490}
+  .status.approved{background:#ecfdf5; color:#166534}
+  .status.rejected{background:#fef2f2; color:#991b1b}
+  .status.disabled{background:#f1f5f9; color:#475569}
+  .tag{font-size:12px; padding:3px 8px; border-radius:999px; background:#eef2ff; color:#3730a3}
+  .muted{color:var(--muted)}
+
+  .pagination{display:flex; gap:6px; justify-content:flex-end; padding:12px}
+  .pagination .btn{padding:6px 10px}
+
+  /* Modal & Drawer & Toast */
+  .backdrop{position:fixed; inset:0; background:rgba(15,23,42,.42); display:none; align-items:flex-end; justify-content:center; z-index:40}
+  .modal{background:#fff; border-radius:14px; width:min(680px, 92vw); margin-bottom:6vh; box-shadow:var(--shadow); overflow:hidden; border:1px solid var(--border)}
+  .modal header{padding:14px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center}
+  .modal .body{padding:16px}
+  .drawer{position:fixed; top:0; right:-560px; height:100vh; width:560px; background:#fff; box-shadow: -8px 0 24px rgba(2,8,23,.12); transition:right .25s; z-index:45; border-left:1px solid var(--border)}
+  .drawer .head{padding:16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center}
+  .drawer .content{padding:16px; overflow:auto; height:calc(100vh - 56px)}
+  .toast{
+    position:fixed; right:20px; bottom:20px; background:#111827; color:#fff; padding:10px 14px; border-radius:10px; box-shadow:var(--shadow); display:none; z-index:50
+  }
+  .hidden{display:none !important}
+
+  /* Auth pages */
+  .center{min-height:100vh; display:grid; place-items:center; padding:24px}
+  .auth{width:min(420px, 92vw)}
+  .auth .logo{display:flex; gap:8px; align-items:center; font-weight:700; color:var(--text); margin-bottom:8px}
+  .auth .logo .dot{width:12px;height:12px;border-radius:999px;background:linear-gradient(135deg,#34d399,#60a5fa)}
+
+  @media (max-width: 920px){
+    .grid-4{grid-template-columns:repeat(2,1fr)}
+    .grid-3{grid-template-columns:repeat(2,1fr)}
+  }
+  @media (max-width: 680px){
+    .app{grid-template-columns: 1fr}
+    .sidebar{position:relative; height:auto; border-bottom:1px solid #1f2937}
+    .grid-4,.grid-3,.grid-2{grid-template-columns:1fr}
+  }
+</style>

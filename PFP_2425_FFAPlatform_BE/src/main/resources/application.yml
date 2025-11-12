@@ -1,0 +1,24 @@
+server:
+  port: 8088
+
+spring:
+  datasource:
+    url: jdbc:postgresql://dpg-d46v8pre5dus73dkvrng-a.frankfurt-postgres.render.com:5432/ffa_pgsql?sslmode=require
+    username: ffa_pgsql_user
+    password: gFZdGDkzxhcQCfsaKfxntc9n6EuLBZWT
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update   # 首次开发用 update，生产不要用
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
+
+# 允许本地前端跨域（按你的前端端口设置：Vite 通常 5173，CRA 通常 3000）
+app:
+  cors:
+    allowed-origins: "http://localhost:5173,http://localhost:3000"
