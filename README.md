@@ -1,6 +1,6 @@
 # How to Run the Project
 
-1.  Open the project root directory in **Command Prompt** (cmd).
+1.  Open the project(ffa-admin) root directory in **Command Prompt** (cmd).
 
 2.  Run the following command:
 
