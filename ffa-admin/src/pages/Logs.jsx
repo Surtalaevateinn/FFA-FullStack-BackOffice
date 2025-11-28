@@ -1,4 +1,13 @@
 export default function Logs({ui}){
+  
+  const handleFilter = () => {
+      ui.showToast('Filter API not implemented')
+  }
+
+  const handleExport = () => {
+      ui.showToast('Export API not implemented')
+  }
+
   return (
     <section id="page-logs">
       <div className="toolbar">
@@ -7,41 +16,42 @@ export default function Logs({ui}){
           <div style={{fontSize:20, fontWeight:700}}>Audit Logs</div>
         </div>
         <div style={{display:'flex', gap:8}}>
-          <button className="btn" onClick={()=>ui.showToast('Filtered')}>Filter</button>
-          <button className="btn ghost" onClick={()=>ui.showToast('Exported')}>Export</button>
+          <button className="btn ghost" onClick={handleExport}>Export CSV</button>
         </div>
       </div>
 
+      {/* Filter Bar */}
       <div className="panel" style={{marginBottom:12}}>
         <div className="grid grid-4">
-          <div className="field"><label>User</label><input placeholder="name/email" /></div>
-          <div className="field"><label>Action</label>
+          <div className="field"><label>Actor (User)</label><input placeholder="User ID / Login" /></div>
+          <div className="field"><label>Entity Type</label>
             <select defaultValue="ALL">
-              <option value="ALL">All</option><option>CREATE</option><option>UPDATE</option><option>DELETE</option><option>EXPORT</option>
+              <option value="ALL">All</option>
+              <option>PROJECT</option>
+              <option>USER</option>
+              <option>DICT</option>
             </select>
           </div>
-          <div className="field"><label>Date from</label><input type="date" /></div>
-          <div className="field"><label>Date to</label><input type="date" /></div>
+          <div className="field"><label>Date From</label><input type="date" /></div>
+          <div className="field" style={{display:'flex', alignItems:'flex-end'}}>
+              <button className="btn primary" style={{width:'100%'}} onClick={handleFilter}>Apply Filter</button>
+          </div>
         </div>
       </div>
 
+      {/* Empty State */}
       <div className="panel">
         <table>
-          <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Target</th><th>IP</th></tr></thead>
+          <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Entity</th><th>IP</th></tr></thead>
           <tbody>
-            <tr><td>2025-11-07 10:21</td><td>admin</td><td>APPROVE</td><td>P-1021</td><td>192.168.0.12</td></tr>
-            <tr><td>2025-11-07 09:58</td><td>mary</td><td>UPDATE</td><td>Dict: Countries</td><td>192.168.0.33</td></tr>
-            <tr><td>2025-11-07 09:40</td><td>audit</td><td>EXPORT</td><td>Logs</td><td>192.168.0.61</td></tr>
-            <tr><td>2025-11-07 09:10</td><td>john</td><td>CREATE</td><td>Announcement</td><td>192.168.0.44</td></tr>
+            <tr>
+                <td colSpan={5} style={{textAlign:'center', padding:40, color:'#999'}}>
+                    Audit Log Controller is missing in backend.<br/>
+                    Please implement <code>/ffaAPI/admin/logs</code>
+                </td>
+            </tr>
           </tbody>
         </table>
-
-        <div className="pagination">
-          <button className="btn">Prev</button>
-          <button className="btn primary">1</button>
-          <button className="btn">2</button>
-          <button className="btn">Next</button>
-        </div>
       </div>
     </section>
   )
