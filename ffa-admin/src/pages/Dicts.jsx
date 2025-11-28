@@ -1,93 +1,124 @@
-// src/pages/Dicts.jsx
 import { useEffect, useState } from "react";
 import api from "../api/api";
 
 export default function Dicts({ ui }) {
-  // 国家
-  const [countries, setCountries] = useState([]);
+  const TABS = [
+    { key: "countries", label: "Countries", apiPath: "/ffaAPI/admin/countries" },
+    { key: "cities", label: "Cities", apiPath: "/ffaAPI/admin/cities" },
+    { key: "embassies", label: "Embassies", apiPath: "/ffaAPI/admin/embassies" },
+  ];
+
+  const [currentTab, setCurrentTab] = useState(TABS[0]);
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
-  const [form, setForm] = useState({ id: null, name: "", isoCode: "" });
-  const [kw, setKw] = useState("");
-
+  
+  const [form, setForm] = useState({ 
+    id: null, 
+    name: "", 
+    // Country specific
+    phoneNumberIndicator: "", 
+    continentId: "",
+    // City specific
+    zipCode: "",
+    // Embassy specific
+    address: "",
+    // Shared foreign key
+    countryId: ""
+  });
   const load = async () => {
     setLoading(true);
     try {
-      // 后端：GET /ffaAPI/admin/countries/list
-      const res = await api.get("/admin/countries/list");
-      setCountries(res.data || []);
+
+      const res = await api.get(currentTab.apiPath, { params: { page: 0, size: 100 } });
+      const body = res.data || {};
+      if (body.success === false) {
+        ui.showToast(body.message || "Load failed");
+        return;
+      }
+
+      const list = body.data?.content || body.data?.records || [];
+      setRows(list);
     } catch (e) {
-      console.error(e);
-      ui?.showToast?.("加载失败");
+      ui.showToast("Network error");
     } finally {
       setLoading(false);
     }
   };
 
+
   useEffect(() => {
+    setRows([]);
+    setFormOpen(false);
     load();
-  }, []);
+  }, [currentTab]);
 
-  const onCreate = async () => {
-    if (!form.name?.trim()) {
-      ui?.showToast?.("名称必填");
-      return;
-    }
+
+  const onSave = async () => {
+    if (!form.name) { ui.showToast("Name is required"); return; }
+    
     try {
-      // POST /admin/countries/create
-      await api.post("/admin/countries/create", {
-        name: form.name.trim(),
-        isoCode: form.isoCode?.trim() || null,
-      });
-      ui?.showToast?.("创建成功");
-      setForm({ id: null, name: "", isoCode: "" });
+
+      const payload = { name: form.name };
+      
+      if (currentTab.key === 'countries') {
+        payload.phoneNumberIndicator = form.phoneNumberIndicator;
+        payload.continentId = form.continentId ? Number(form.continentId) : null;
+      } else if (currentTab.key === 'cities') {
+        payload.zipCode = form.zipCode;
+        payload.countryId = form.countryId ? Number(form.countryId) : null;
+      } else if (currentTab.key === 'embassies') {
+        payload.address = form.address;
+        payload.countryId = form.countryId ? Number(form.countryId) : null;
+      }
+
+      if (form.id) {
+        // Update: PUT /{path}/{id}
+        await api.put(`${currentTab.apiPath}/${form.id}`, payload);
+        ui.showToast("Updated successfully");
+      } else {
+        // Create: POST /{path}
+        await api.post(currentTab.apiPath, payload);
+        ui.showToast("Created successfully");
+      }
       setFormOpen(false);
       load();
     } catch (e) {
-      console.error(e);
-      ui?.showToast?.(e?.response?.data?.message || "创建失败");
+      ui.showToast(e?.response?.data?.message || "Save failed");
     }
   };
 
-  const onUpdate = async () => {
-    try {
-      // PUT /admin/countries/update/{id}
-      await api.put(`/admin/countries/update/${form.id}`, {
-        name: form.name?.trim(),
-        isoCode: form.isoCode?.trim() || null,
-      });
-      ui?.showToast?.("更新成功");
-      setForm({ id: null, name: "", isoCode: "" });
-      setFormOpen(false);
-      load();
-    } catch (e) {
-      console.error(e);
-      ui?.showToast?.(e?.response?.data?.message || "更新失败");
-    }
-  };
 
   const onDelete = async (id) => {
-    if (!confirm("确认删除该国家？")) return;
-    try {
-      // DELETE /admin/countries/delete/{id}
-      await api.delete(`/admin/countries/delete/${id}`);
-      ui?.showToast?.("已删除");
-      load();
-    } catch (e) {
-      console.error(e);
-      ui?.showToast?.(e?.response?.data?.message || "删除失败");
-    }
+    ui.openConfirm("Confirm delete?", async () => {
+      try {
+        await api.delete(`${currentTab.apiPath}/${id}`);
+        ui.showToast("Deleted");
+        load();
+      } catch (e) {
+        ui.showToast("Delete failed");
+      }
+    });
   };
 
-  const filtered = countries.filter((c) => {
-    if (!kw.trim()) return true;
-    const s = kw.trim().toLowerCase();
-    return (
-      String(c.id).includes(s) ||
-      c.name?.toLowerCase().includes(s) ||
-      c.isoCode?.toLowerCase().includes(s)
-    );
-  });
+
+  const openEdit = (row) => {
+    setForm({
+      id: row.id,
+      name: row.name || "",
+      phoneNumberIndicator: row.phoneNumberIndicator || "",
+      continentId: row.continentId || "",
+      zipCode: row.zipCode || "",
+      address: row.address || "",
+      countryId: row.countryId || "" 
+    });
+    setFormOpen(true);
+  };
+
+  const openCreate = () => {
+    setForm({ id: null, name: "", phoneNumberIndicator: "", continentId: "", zipCode: "", address: "", countryId: "" });
+    setFormOpen(true);
+  };
 
   return (
     <section id="page-dicts">
@@ -97,132 +128,118 @@ export default function Dicts({ ui }) {
           <div style={{ fontSize: 20, fontWeight: 700 }}>Dictionaries</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn" onClick={load}>
-            重新加载
-          </button>
-          <button
-            className="btn primary"
-            onClick={() => {
-              setForm({ id: null, name: "", isoCode: "" });
-              setFormOpen(true);
-            }}
+          <button className="btn" onClick={load}>Refresh</button>
+          <button className="btn primary" onClick={openCreate}>Add {currentTab.label.slice(0, -1)}</button>
+        </div>
+      </div>
+
+      {/* Tabs switch */}
+      <div className="panel" style={{ marginBottom: 12, display: 'flex', gap: 10 }}>
+        {TABS.map(tab => (
+          <button 
+            key={tab.key}
+            className={`btn ${currentTab.key === tab.key ? 'primary' : 'ghost'}`}
+            onClick={() => setCurrentTab(tab)}
           >
-            新增国家
+            {tab.label}
           </button>
-        </div>
+        ))}
       </div>
 
-      <div className="panel" style={{ marginBottom: 12 }}>
-        <div className="grid grid-3">
-          <div className="field">
-            <label>关键词</label>
-            <input
-              placeholder="ID / 名称 / ISO"
-              value={kw}
-              onChange={(e) => setKw(e.target.value)}
-            />
-          </div>
-          <div className="field">
-            <label>健康检查</label>
-            <button
-              className="btn"
-              onClick={async () => {
-                try {
-                  const res = await api.get("/health");
-                  ui?.showToast?.(`后端：${res.data}`);
-                } catch {
-                  ui?.showToast?.("后端不可达");
-                }
-              }}
-            >
-              /ffaAPI/health
-            </button>
-          </div>
-        </div>
-      </div>
-
+      {/*  */}
       <div className="panel">
         <table>
           <thead>
             <tr>
-              <th style={{ width: 80 }}>ID</th>
-              <th>名称</th>
-              <th style={{ width: 120 }}>ISO</th>
-              <th style={{ width: 160 }}>操作</th>
+              <th style={{ width: 60 }}>ID</th>
+              <th>Name</th>
+              {/*  */}
+              {currentTab.key === 'countries' && <th>Indicator</th>}
+              {currentTab.key === 'cities' && <th>Zip Code</th>}
+              {currentTab.key === 'embassies' && <th>Address</th>}
+              
+              <th style={{ width: 140 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={4}>加载中...</td>
+            {loading ? <tr><td colSpan={5}>Loading...</td></tr> : rows.map(r => (
+              <tr key={r.id}>
+                <td>{r.id}</td>
+                <td>{r.name}</td>
+                
+                {currentTab.key === 'countries' && <td>{r.phoneNumberIndicator || '-'}</td>}
+                {currentTab.key === 'cities' && <td>{r.zipCode || '-'}</td>}
+                {currentTab.key === 'embassies' && <td>{r.address || '-'}</td>}
+
+                <td>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button className="btn small" onClick={() => openEdit(r)}>Edit</button>
+                    <button className="btn small danger" onClick={() => onDelete(r.id)}>Del</button>
+                  </div>
+                </td>
               </tr>
-            ) : filtered.length ? (
-              filtered.map((c) => (
-                <tr key={c.id}>
-                  <td>{c.id}</td>
-                  <td>{c.name}</td>
-                  <td>{c.isoCode || "-"}</td>
-                  <td>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        className="btn"
-                        onClick={() => {
-                          setForm({ id: c.id, name: c.name, isoCode: c.isoCode || "" });
-                          setFormOpen(true);
-                        }}
-                      >
-                        编辑
-                      </button>
-                      <button className="btn ghost" onClick={() => onDelete(c.id)}>
-                        删除
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4}>暂无数据</td>
-              </tr>
-            )}
+            ))}
+            {!loading && rows.length === 0 && <tr><td colSpan={5} style={{textAlign:'center'}}>No data</td></tr>}
           </tbody>
         </table>
       </div>
 
-      {/* 简易内联表单（你也可以换成全局 Drawer/Modal） */}
+      {/*  */}
       {formOpen && (
-        <div className="panel" style={{ marginTop: 12 }}>
+        <div className="panel" style={{ marginTop: 12, border: '2px solid #eee' }}>
+          <h3>{form.id ? 'Edit' : 'Create'} {currentTab.label.slice(0, -1)}</h3>
           <div className="grid grid-3">
             <div className="field">
-              <label>名称</label>
-              <input
-                value={form.name}
-                onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-                placeholder="France"
-              />
+              <label>Name *</label>
+              <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
             </div>
-            <div className="field">
-              <label>ISO</label>
-              <input
-                value={form.isoCode}
-                onChange={(e) => setForm((s) => ({ ...s, isoCode: e.target.value }))}
-                placeholder="FR"
-              />
-            </div>
-          </div>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-            <button className="btn" onClick={() => setFormOpen(false)}>
-              取消
-            </button>
-            {form.id ? (
-              <button className="btn primary" onClick={onUpdate}>
-                保存修改
-              </button>
-            ) : (
-              <button className="btn primary" onClick={onCreate}>
-                创建
-              </button>
+
+            {/* Country Fields */}
+            {currentTab.key === 'countries' && (
+              <>
+                <div className="field">
+                  <label>Phone Indicator</label>
+                  <input placeholder="+33" value={form.phoneNumberIndicator} onChange={e => setForm({...form, phoneNumberIndicator: e.target.value})} />
+                </div>
+                <div className="field">
+                  <label>Continent ID</label>
+                  <input type="number" value={form.continentId} onChange={e => setForm({...form, continentId: e.target.value})} />
+                </div>
+              </>
             )}
+
+            {/* City Fields */}
+            {currentTab.key === 'cities' && (
+              <>
+                <div className="field">
+                  <label>Zip Code</label>
+                  <input value={form.zipCode} onChange={e => setForm({...form, zipCode: e.target.value})} />
+                </div>
+                <div className="field">
+                  <label>Country ID</label>
+                  <input type="number" value={form.countryId} onChange={e => setForm({...form, countryId: e.target.value})} />
+                </div>
+              </>
+            )}
+
+            {/* Embassy Fields */}
+            {currentTab.key === 'embassies' && (
+              <>
+                <div className="field">
+                  <label>Address</label>
+                  <input value={form.address} onChange={e => setForm({...form, address: e.target.value})} />
+                </div>
+                <div className="field">
+                  <label>Country ID</label>
+                  <input type="number" value={form.countryId} onChange={e => setForm({...form, countryId: e.target.value})} />
+                </div>
+              </>
+            )}
+          </div>
+          
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
+            <button className="btn" onClick={() => setFormOpen(false)}>Cancel</button>
+            <button className="btn primary" onClick={onSave}>Save</button>
           </div>
         </div>
       )}
