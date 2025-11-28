@@ -23,7 +23,6 @@ export default function Analytics({ui}){
         <div className="panel">
           <div className="panel-head"><h3 style={{margin:0}}>Projects per Day</h3></div>
           <div style={{height:260, display:'grid', placeItems:'center'}} className="muted">
-            {/* 这里可换成真正图表库；先占位 */}
             [Chart Placeholder]
           </div>
         </div>
