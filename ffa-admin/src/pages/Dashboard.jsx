@@ -1,59 +1,107 @@
+import { useEffect, useState } from 'react'
+import api from '../api/api'
+
 export default function Dashboard({ui}){
+  const [stats, setStats] = useState({
+    users: '-',
+    projects: '-',
+    cities: '-',
+    countries: '-'
+  })
+  const [loading, setLoading] = useState(false)
+
+  const fetchStats = async () => {
+    setLoading(true)
+    try {
+      const [pRes, uRes, cRes, ctRes] = await Promise.allSettled([
+        api.get('/ffaAPI/admin/projects', { params: { page: 0, size: 1 } }),
+        api.get('/ffaAPI/admin/persons', { params: { page: 0, size: 1 } }),
+        api.get('/ffaAPI/admin/cities', { params: { page: 0, size: 1 } }),
+        api.get('/ffaAPI/admin/countries', { params: { page: 0, size: 1 } })
+      ])
+
+      const extractTotal = (resResult) => {
+        if (resResult.status === 'fulfilled') {
+            return resResult.value.data?.data?.totalElements ?? 'Err'
+        }
+        return 'Err'
+      }
+
+      setStats({
+        projects: extractTotal(pRes),
+        users: extractTotal(uRes),
+        cities: extractTotal(cRes),
+        countries: extractTotal(ctRes)
+      })
+
+    } catch (e) {
+      console.error(e)
+      ui.showToast('Failed to load stats')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchStats()
+  }, [])
+
   return (
     <section id="page-dashboard">
-      {/* KPI 区 */}
+      {/*  */}
       <div className="grid grid-4">
         <div className="card kpi">
-          <h3>Pending Projects</h3>
-          <div className="num">12</div>
-          <div className="muted">+3 since last week</div>
+          <h3>Total Projects</h3>
+          <div className="num">{loading ? '...' : stats.projects}</div>
+          <div className="muted">All time</div>
         </div>
         <div className="card kpi">
-          <h3>New Applications</h3>
-          <div className="num">87</div>
-          <div className="muted">-12 vs avg</div>
+          <h3>Registered Users</h3>
+          <div className="num">{loading ? '...' : stats.users}</div>
+          <div className="muted">Interveners & Admins</div>
         </div>
         <div className="card kpi">
-          <h3>Interveners to Verify</h3>
-          <div className="num">5</div>
-          <div className="muted">2 urgent</div>
+          <h3>Cities Coverage</h3>
+          <div className="num">{loading ? '...' : stats.cities}</div>
+          <div className="muted">in {stats.countries} countries</div>
         </div>
         <div className="card kpi">
-          <h3>Uptime</h3>
-          <div className="num">99.9%</div>
-          <div className="muted">past 30 days</div>
+          <h3>System Status</h3>
+          <div className="num" style={{color: '#4caf50'}}>Online</div>
+          <div className="muted">API Responsive</div>
         </div>
       </div>
 
-      {/* 快捷操作 */}
+      {/* (Shortcuts) */}
       <div className="toolbar" style={{marginTop:16}}>
         <div className="muted">Quick Actions</div>
         <div>
-          <a className="btn primary" href="/projects">Review Pending Projects</a>
-          <a className="btn ghost" href="/users">Verify Interveners</a>
-          <a className="btn ghost" href="/announce">Create Announcement</a>
+          {/*  */}
+          <button className="btn primary" onClick={() => ui.showToast('Go to Projects tab')}>Manage Projects</button>
+          <button className="btn ghost" onClick={() => ui.showToast('Go to Users tab')}>Verify Users</button>
         </div>
       </div>
 
       <div className="grid grid-2" style={{marginTop:16}}>
-        {/* Recent Activities */}
+        {/* Mock Activity Feed (no Logs API) */}
         <div className="panel">
           <div className="panel-head">
             <div>
               <div className="muted">Activity</div>
               <h3 style={{margin:0}}>Recent Activities</h3>
             </div>
-            <div><button className="btn" onClick={()=>ui.showToast('Refreshed')}>Refresh</button></div>
+            <div><button className="btn" onClick={fetchStats}>Refresh</button></div>
           </div>
           <table>
             <thead>
-              <tr><th>Time</th><th>User</th><th>Action</th><th>Target</th></tr>
+              <tr><th>Time</th><th>User</th><th>Action</th></tr>
             </thead>
             <tbody>
-              <tr><td>10:21</td><td>admin</td><td>Approved</td><td>P-1021</td></tr>
-              <tr><td>09:58</td><td>mary</td><td>Updated</td><td>Dict “Countries”</td></tr>
-              <tr><td>09:40</td><td>audit</td><td>Exported</td><td>Logs</td></tr>
-              <tr><td>09:10</td><td>john</td><td>Created</td><td>Announcement</td></tr>
+              <tr><td className="muted">Just now</td><td>System</td><td>Dashboard loaded</td></tr>
+              <tr><td className="muted">10 min ago</td><td>Admin</td><td>Checked Users</td></tr>
+              <tr><td colSpan="3" style={{textAlign:'center', color:'#999'}}>
+                 (Audit Log API not implemented yet)
+              </td></tr>
             </tbody>
           </table>
         </div>
@@ -65,25 +113,18 @@ export default function Dashboard({ui}){
               <div className="muted">System</div>
               <h3 style={{margin:0}}>Health & Status</h3>
             </div>
-            <div><button className="btn ghost" onClick={()=>ui.showToast('OK')}>Run check</button></div>
           </div>
           <div className="grid grid-2">
             <div className="card">
-              <div className="muted">API Latency</div>
-              <div className="num">78 ms</div>
-              <div className="muted">avg today</div>
+              <div className="muted">Backend</div>
+              <div className="num">Spring Boot</div>
+              <div className="muted">v3.0.0</div>
             </div>
             <div className="card">
-              <div className="muted">Error Rate</div>
-              <div className="num">0.12%</div>
-              <div className="muted">past hour</div>
+              <div className="muted">Database</div>
+              <div className="num">PostgreSQL</div>
+              <div className="muted">Connected</div>
             </div>
-          </div>
-          <div className="panel" style={{marginTop:12}}>
-            <div className="muted">Incidents</div>
-            <ul style={{marginTop:8}}>
-              <li>No active incidents.</li>
-            </ul>
           </div>
         </div>
       </div>
