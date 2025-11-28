@@ -11,6 +11,8 @@ import Analytics from './pages/Analytics.jsx'
 import Login from './pages/Login.jsx'
 import Forgot from './pages/Forgot.jsx'
 import Reset from './pages/Reset.jsx'
+import Register from './pages/Register.jsx'
+
 
 import Drawer from './components/Drawer.jsx'
 import Modal from './components/Modal.jsx'
@@ -19,7 +21,7 @@ import Toast from './components/Toast.jsx'
 export default function App(){
   const location = useLocation()
 
-  // 全局 UI 状态
+
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerTitle, setDrawerTitle] = useState('Project Review')
   const [modalOpen, setModalOpen] = useState(false)
@@ -37,7 +39,7 @@ export default function App(){
   const breadcrumb = location.pathname === '/' ? 'Dashboard'
     : location.pathname.slice(1).split('/')[0].replace(/^\w/, c=>c.toUpperCase())
 
-  const authPaths = ['/login','/forgot','/reset']
+  const authPaths = ['/login', '/forgot', '/reset', '/register']
   const isAuth = authPaths.includes(location.pathname)
 
   return (
@@ -83,6 +85,7 @@ export default function App(){
             <Route path="/login" element={<Login />} />
             <Route path="/forgot" element={<Forgot />} />
             <Route path="/reset" element={<Reset />} />
+            <Route path="/register" element={<Register />} />
           </Routes>
         </div>
       </main>
