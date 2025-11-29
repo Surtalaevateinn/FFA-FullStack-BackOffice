@@ -1,4 +1,4 @@
-import { Link, NavLink, Routes, Route, useLocation } from 'react-router-dom'
+import { Link, NavLink, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { useState } from 'react'
 
 import Dashboard from './pages/Dashboard.jsx'
@@ -13,14 +13,12 @@ import Forgot from './pages/Forgot.jsx'
 import Reset from './pages/Reset.jsx'
 import Register from './pages/Register.jsx'
 
-
 import Drawer from './components/Drawer.jsx'
 import Modal from './components/Modal.jsx'
 import Toast from './components/Toast.jsx'
 
 export default function App(){
   const location = useLocation()
-
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerTitle, setDrawerTitle] = useState('Project Review')
@@ -36,8 +34,8 @@ export default function App(){
     showToast: (msg) => { setToast(msg); setTimeout(()=> setToast(null), 1400) },
   }
 
-  const breadcrumb = location.pathname === '/' ? 'Dashboard'
-    : location.pathname.slice(1).split('/')[0].replace(/^\w/, c=>c.toUpperCase())
+  const path = location.pathname.slice(1).split('/')[0]
+  const breadcrumb = path ? path.replace(/^\w/, c=>c.toUpperCase()) : 'Dashboard'
 
   const authPaths = ['/login', '/forgot', '/reset', '/register']
   const isAuth = authPaths.includes(location.pathname)
@@ -48,7 +46,7 @@ export default function App(){
         <aside className="sidebar">
           <div className="brand"><span className="dot"></span> FFA Admin</div>
           <nav className="nav" id="nav">
-            <NavLink to="/" end>🏠 Dashboard</NavLink>
+            <NavLink to="/dashboard">🏠 Dashboard</NavLink>
             <NavLink to="/projects">📁 Project Approval</NavLink>
             <NavLink to="/users">👥 Users & Roles</NavLink>
             <NavLink to="/dicts">🗂️ Dictionaries</NavLink>
@@ -75,7 +73,10 @@ export default function App(){
 
         <div className="content" style={isAuth ? {paddingInline:0, paddingTop:0} : {}}>
           <Routes>
-            <Route path="/" element={<Dashboard ui={ui} />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            
+            <Route path="/dashboard" element={<Dashboard ui={ui} />} />
+            
             <Route path="/projects" element={<Projects ui={ui} />} />
             <Route path="/users" element={<Users ui={ui} />} />
             <Route path="/dicts" element={<Dicts ui={ui} />} />
@@ -86,6 +87,8 @@ export default function App(){
             <Route path="/forgot" element={<Forgot />} />
             <Route path="/reset" element={<Reset />} />
             <Route path="/register" element={<Register />} />
+            
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </div>
       </main>
