@@ -79,16 +79,8 @@ export default function Users({ ui }) {
     }
   }
 
-  // Create or Update user
+ // Create or Update user
   const onSave = async () => {
-    if (!form.login || !form.email) {
-      ui.showToast('Login and Email are required')
-      return
-    }
-    if (!form.roleId) {
-      ui.showToast('Please select a role')
-      return
-    }
 
     try {
       const payload = {
@@ -97,23 +89,32 @@ export default function Users({ ui }) {
         email: form.email,
         login: form.login,
         password: form.password || undefined, 
-        // Send flat roleId to ensure correct mapping in Backend
         roleId: Number(form.roleId)     
       }
 
+      let res; 
+
       if (form.id) {
-        // Update: PUT /ffaAPI/admin/persons/{id}
-        await api.put(`/ffaAPI/admin/persons/${form.id}`, payload)
-        ui.showToast('User updated')
+        // Update
+        res = await api.put(`/ffaAPI/admin/persons/${form.id}`, payload)
       } else {
-        // Create: POST /ffaAPI/admin/persons
-        await api.post('/ffaAPI/admin/persons', payload)
-        ui.showToast('User created')
+        // Create
+        res = await api.post('/ffaAPI/admin/persons', payload)
       }
 
+     
+      const body = res.data || {}
+      if (body.success === false) {
+       
+        ui.showToast(body.message || 'Operation failed')
+        return 
+      }
+
+      
+      ui.showToast(form.id ? 'User updated' : 'User created')
       setFormOpen(false)
       setForm(initialForm)
-      loadPersons() // Refresh list
+      loadPersons() 
     } catch (e) {
       ui.showToast(e?.response?.data?.message || 'Save failed')
     }
