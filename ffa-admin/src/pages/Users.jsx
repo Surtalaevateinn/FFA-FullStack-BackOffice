@@ -6,10 +6,8 @@ export default function Users({ ui }) {
   const [roles, setRoles] = useState([]) 
   const [loading, setLoading] = useState(false)
   
-
   const [keyword, setKeyword] = useState('')
   const [roleFilter, setRoleFilter] = useState('ALL')
-
 
   const initialForm = {
     id: null,
@@ -23,7 +21,7 @@ export default function Users({ ui }) {
   const [form, setForm] = useState(initialForm)
   const [formOpen, setFormOpen] = useState(false)
 
-
+  // Load available roles for the dropdown
   const loadRoles = async () => {
     try {
       const res = await api.get('/ffaAPI/admin/roles')
@@ -33,7 +31,6 @@ export default function Users({ ui }) {
         console.warn('Failed to load roles:', body.message)
         return
       }
-      
 
       setRoles(body.data || []) 
     } catch (e) {
@@ -42,35 +39,47 @@ export default function Users({ ui }) {
     }
   }
 
-
+  // Load users from backend (supports search OR role filter)
   const loadPersons = async () => {
     setLoading(true)
     try {
-
       const isSearch = !!keyword.trim()
-      const url = isSearch ? '/ffaAPI/admin/persons/search' : '/ffaAPI/admin/persons'
+      let url = '/ffaAPI/admin/persons'
       const params = { page: 0, size: 50 } 
-      if (isSearch) params.keyword = keyword.trim()
+
+      if (isSearch) {
+        // Use search endpoint if keyword exists
+        url = '/ffaAPI/admin/persons/search'
+        params.keyword = keyword.trim()
+      } else {
+        // Otherwise check for role filter
+        // Note: Backend AdminController must accept 'roleId' param
+        if (roleFilter !== 'ALL') {
+          params.roleId = roleFilter
+        }
+      }
 
       const res = await api.get(url, { params })
       const body = res.data || {}
 
       if (body.success === false) {
         ui.showToast(body.message || 'Failed to load users')
+        setPersons([]) 
         return
       }
 
-
       const pageData = body.data || {}
+      // Use data directly from backend (server-side filtering)
       setPersons(pageData.content || pageData.records || [])
     } catch (e) {
       ui.showToast(e?.response?.data?.message || 'Request failed')
+      setPersons([])
     } finally {
       setLoading(false)
     }
   }
 
-
+  // Create or Update user
   const onSave = async () => {
     if (!form.login || !form.email) {
       ui.showToast('Login and Email are required')
@@ -82,14 +91,14 @@ export default function Users({ ui }) {
     }
 
     try {
-
       const payload = {
         firstName: form.firstName,
         lastName: form.lastName,
         email: form.email,
         login: form.login,
         password: form.password || undefined, 
-        role: { id: Number(form.roleId) }     
+        // Send flat roleId to ensure correct mapping in Backend
+        roleId: Number(form.roleId)     
       }
 
       if (form.id) {
@@ -104,12 +113,11 @@ export default function Users({ ui }) {
 
       setFormOpen(false)
       setForm(initialForm)
-      loadPersons()
+      loadPersons() // Refresh list
     } catch (e) {
       ui.showToast(e?.response?.data?.message || 'Save failed')
     }
   }
-
 
   const deleteUser = (id, name) => {
     ui.openConfirm(`Delete user ${name}?`, async () => {
@@ -123,12 +131,15 @@ export default function Users({ ui }) {
     })
   }
 
-
+  // Initial load
   useEffect(() => {
     loadRoles()    
-    loadPersons() 
   }, [])
 
+  // Reload users when role filter changes
+  useEffect(() => {
+    loadPersons()
+  }, [roleFilter]) 
 
   const openEdit = (p) => {
     setForm({
@@ -138,7 +149,8 @@ export default function Users({ ui }) {
       email: p.email || '',
       login: p.login || '',
       password: '',
-      roleId: p.role?.id || '' 
+      // Try getting roleId from flat field first, then nested object
+      roleId: p.roleId || p.role?.id || '' 
     })
     setFormOpen(true)
     setTimeout(() => document.getElementById('user-form')?.scrollIntoView({ behavior: 'smooth' }), 100)
@@ -149,11 +161,6 @@ export default function Users({ ui }) {
     setFormOpen(true)
     setTimeout(() => document.getElementById('user-form')?.scrollIntoView({ behavior: 'smooth' }), 100)
   }
-
-
-  const filteredPersons = roleFilter === 'ALL'
-    ? persons
-    : persons.filter(p => String(p.role?.id) === String(roleFilter))
 
   const getDisplayName = (p) => [p.firstName, p.lastName].filter(Boolean).join(' ') || p.login
 
@@ -170,25 +177,27 @@ export default function Users({ ui }) {
         </div>
       </div>
 
-      {/* */}
+      {/* Filter & Search Bar */}
       <div className="panel" style={{ marginBottom: 12 }}>
         <div className="grid grid-3">
           <div className="field">
             <label>Keyword</label>
             <input 
-              placeholder="Search..." 
+              placeholder="Search by name/email..." 
               value={keyword} 
               onChange={e => setKeyword(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && loadPersons()}
             />
           </div>
           
-          {/* [API] Filter by Role */}
           <div className="field">
             <label>Filter by Role</label>
             <select
               value={roleFilter}
-              onChange={e => setRoleFilter(e.target.value)}
+              onChange={e => {
+                setRoleFilter(e.target.value)
+                setKeyword('') // Optional: clear keyword to avoid conflict
+              }}
             >
               <option value="ALL">All Roles</option>
               {roles.map(r => (
@@ -203,7 +212,7 @@ export default function Users({ ui }) {
         </div>
       </div>
 
-      {/*  */}
+      {/* Data Table */}
       <div className="panel">
         <table>
           <thead>
@@ -216,12 +225,16 @@ export default function Users({ ui }) {
             </tr>
           </thead>
           <tbody>
-            {filteredPersons.map(p => (
+            {persons.map(p => (
               <tr key={p.id}>
                 <td><strong>{getDisplayName(p)}</strong></td>
                 <td>{p.email || '-'}</td>
                 <td>{p.login || '-'}</td>
-                <td><span className="tag">{p.role?.name || 'No Role'}</span></td>
+                <td>
+                  <span className="tag">
+                    {p.role ? p.role.name : (p.roleId ? 'Role #' + p.roleId : 'No Role')}
+                  </span>
+                </td>
                 <td>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button className="btn small" onClick={() => openEdit(p)}>Edit</button>
@@ -230,7 +243,7 @@ export default function Users({ ui }) {
                 </td>
               </tr>
             ))}
-            {filteredPersons.length === 0 && !loading && (
+            {persons.length === 0 && !loading && (
               <tr><td colSpan="5" style={{ textAlign: 'center', padding: 20 }}>No users found</td></tr>
             )}
             {loading && (
@@ -240,7 +253,7 @@ export default function Users({ ui }) {
         </table>
       </div>
 
-      {/*  */}
+      {/* Edit/Create Form */}
       {formOpen && (
         <div id="user-form" className="panel" style={{ marginTop: 20, border: '2px solid #eee' }}>
           <h3>{form.id ? 'Edit User' : 'Create New User'}</h3>
@@ -266,7 +279,6 @@ export default function Users({ ui }) {
                 <input value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} />
             </div>
 
-            {/* [API] Select Role */}
             <div className="field">
               <label>Role *</label>
               <select 
