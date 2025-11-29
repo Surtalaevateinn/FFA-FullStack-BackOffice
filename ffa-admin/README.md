@@ -17,3 +17,5 @@ http://localhost:5173/
 
 -   Username: adminZDS
 -   Password: Zds123456
+
+5.  Or just visit https://ffa-full-stack-back-office.vercel.app
