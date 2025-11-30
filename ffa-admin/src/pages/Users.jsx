@@ -39,7 +39,7 @@ export default function Users({ ui }) {
     }
   }
 
-  // Load users from backend (supports search OR role filter)
+  // Load users from backend
   const loadPersons = async () => {
     setLoading(true)
     try {
@@ -48,12 +48,9 @@ export default function Users({ ui }) {
       const params = { page: 0, size: 50 } 
 
       if (isSearch) {
-        // Use search endpoint if keyword exists
         url = '/ffaAPI/admin/persons/search'
         params.keyword = keyword.trim()
       } else {
-        // Otherwise check for role filter
-        // Note: Backend AdminController must accept 'roleId' param
         if (roleFilter !== 'ALL') {
           params.roleId = roleFilter
         }
@@ -69,7 +66,6 @@ export default function Users({ ui }) {
       }
 
       const pageData = body.data || {}
-      // Use data directly from backend (server-side filtering)
       setPersons(pageData.content || pageData.records || [])
     } catch (e) {
       ui.showToast(e?.response?.data?.message || 'Request failed')
@@ -81,7 +77,6 @@ export default function Users({ ui }) {
 
  // Create or Update user
   const onSave = async () => {
-
     try {
       const payload = {
         firstName: form.firstName,
@@ -93,23 +88,17 @@ export default function Users({ ui }) {
       }
 
       let res; 
-
       if (form.id) {
-        // Update
         res = await api.put(`/ffaAPI/admin/persons/${form.id}`, payload)
       } else {
-        // Create
         res = await api.post('/ffaAPI/admin/persons', payload)
       }
 
-     
       const body = res.data || {}
       if (body.success === false) {
-       
         ui.showToast(body.message || 'Operation failed')
         return 
       }
-
       
       ui.showToast(form.id ? 'User updated' : 'User created')
       setFormOpen(false)
@@ -137,7 +126,6 @@ export default function Users({ ui }) {
     loadRoles()    
   }, [])
 
-  // Reload users when role filter changes
   useEffect(() => {
     loadPersons()
   }, [roleFilter]) 
@@ -150,7 +138,6 @@ export default function Users({ ui }) {
       email: p.email || '',
       login: p.login || '',
       password: '',
-      // Try getting roleId from flat field first, then nested object
       roleId: p.roleId || p.role?.id || '' 
     })
     setFormOpen(true)
@@ -178,10 +165,9 @@ export default function Users({ ui }) {
         </div>
       </div>
 
-{/* Filter & Search Bar */}
+      {/* Filter & Search Bar */}
       <div className="panel" style={{ marginBottom: 12 }}>
         <div className="grid grid-3">
-          {/* Keyword Field */}
           <div className="field">
             <label>Keyword</label>
             <input 
@@ -193,10 +179,11 @@ export default function Users({ ui }) {
             />
           </div>
           
-          {/* Role Field */}
           <div className="field">
             <label>Filter by Role</label>
+            {/* UPDATED: Added form-select class */}
             <select
+              className="form-select"
               value={roleFilter}
               onChange={e => {
                 setRoleFilter(e.target.value)
@@ -210,7 +197,6 @@ export default function Users({ ui }) {
             </select>
           </div>
 
-          {/* Action Buttons */}
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
              <button className="btn primary" onClick={loadPersons}>Search</button>
              <button className="btn ghost" onClick={() => {
@@ -291,7 +277,9 @@ export default function Users({ ui }) {
 
             <div className="field">
               <label>Role *</label>
+              {/* UPDATED: Added form-select class */}
               <select 
+                className="form-select"
                 value={form.roleId} 
                 onChange={e => setForm({ ...form, roleId: e.target.value })}
               >
@@ -318,6 +306,55 @@ export default function Users({ ui }) {
           </div>
         </div>
       )}
+
+      {/* UPDATED: Added Style Block for Users.jsx */}
+      <style>{`
+        .tag {
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          font-weight: 500;
+          background: #e6f7ff;
+          color: #1890ff;
+          border: 1px solid #91d5ff;
+          display: inline-block;
+        }
+        .btn.small {
+          padding: 2px 8px;
+          font-size: 12px;
+          height: 28px;
+          line-height: 1;
+        }
+        .success { background-color: #52c41a; color: white; border: none; }
+        .danger { background-color: #ff4d4f; color: white; border: none; }
+
+        /* UNIFIED SELECT STYLE */
+        .form-select {
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          background-color: #fff;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8.825L1.175 4 2.238 2.938 6 6.7 9.763 2.938 10.825 4z'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 10px center;
+          border: 1px solid #d9d9d9;
+          border-radius: 4px;
+          padding: 6px 30px 6px 12px;
+          font-size: 14px;
+          color: #333;
+          transition: all 0.2s;
+          outline: none;
+          height: 38px;
+          width: 100%;
+        }
+        .form-select:focus {
+          border-color: #40a9ff;
+          box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+        .form-select:hover {
+          border-color: #40a9ff;
+        }
+      `}</style>
     </section>
   )
 }
