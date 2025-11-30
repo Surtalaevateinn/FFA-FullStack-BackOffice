@@ -10,7 +10,7 @@ export default function Announce({ ui }) {
   const [filters, setFilters] = useState({
     keyword: '',
     status: 'ALL', 
-    category: 'ALL' // Changed from 'type' to 'category'
+    category: 'ALL' 
   })
 
   // Editor State
@@ -18,7 +18,7 @@ export default function Announce({ ui }) {
     id: null,
     title: '',
     content: '',
-    category: 'GENERAL', // Changed from 'type' to 'category'
+    category: 'GENERAL',
     status: 'DRAFT'
   }
   const [form, setForm] = useState(initialForm)
@@ -33,7 +33,6 @@ export default function Announce({ ui }) {
       const params = { page: 0, size: 20 }
       if (filters.keyword.trim()) params.keyword = filters.keyword.trim()
       if (filters.status !== 'ALL') params.status = filters.status
-      // Pass category if filtered
       if (filters.category !== 'ALL') params.category = filters.category 
 
       const res = await api.get('/ffaAPI/admin/announcements', { params })
@@ -64,7 +63,6 @@ export default function Announce({ ui }) {
     }
 
     try {
-      // Use 'category' in payload
       const payload = {
         ...form,
         category: form.category || 'GENERAL', 
@@ -139,7 +137,6 @@ export default function Announce({ ui }) {
       id: item.id,
       title: item.title,
       content: item.content,
-      // Fallback to 'GENERAL' if null, handles uppercase/lowercase from backend
       category: item.category || 'GENERAL', 
       status: item.status
     })
@@ -147,16 +144,13 @@ export default function Announce({ ui }) {
     setIsEditorOpen(true)
   }
 
-  // Helper to format date
   const formatDate = (dateStr) => {
     if (!dateStr) return '-'
     return new Date(dateStr).toLocaleDateString() + ' ' + new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
   }
 
-  // Helper to prettify category for display (GENERAL -> General)
   const formatCategory = (cat) => {
     if (!cat) return 'General'
-    // Capitalize first letter, lowercase the rest
     return cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase()
   }
 
@@ -175,10 +169,9 @@ export default function Announce({ ui }) {
         </div>
       </div>
 
-{/* --- Filters --- */}
+      {/* --- Filters --- */}
       <div className="panel" style={{ marginBottom: 12 }}>
         <div className="grid grid-4">
-          {/* Keyword Field */}
           <div className="field">
             <label>Keyword</label>
             <input 
@@ -190,10 +183,11 @@ export default function Announce({ ui }) {
             />
           </div>
 
-          {/* Status Field */}
           <div className="field">
             <label>Status</label>
+            {/* UPDATED: Added form-select class */}
             <select 
+              className="form-select"
               value={filters.status} 
               onChange={e => setFilters({ ...filters, status: e.target.value })}
             >
@@ -203,10 +197,11 @@ export default function Announce({ ui }) {
             </select>
           </div>
 
-          {/* Category Field */}
           <div className="field">
             <label>Category</label>
+            {/* UPDATED: Added form-select class */}
             <select 
+              className="form-select"
               value={filters.category} 
               onChange={e => setFilters({ ...filters, category: e.target.value })}
             >
@@ -217,7 +212,6 @@ export default function Announce({ ui }) {
             </select>
           </div>
 
-          {/* Action Buttons - Aligned to bottom */}
           <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
             <button className="btn primary" onClick={loadAnnouncements}>Filter</button>
             <button className="btn ghost" onClick={() => {
@@ -250,7 +244,6 @@ export default function Announce({ ui }) {
                   </div>
                 </td>
                 <td style={{ padding: 12 }}>
-                  {/* Use item.category here */}
                   <span className="tag">{formatCategory(item.category)}</span>
                 </td>
                 <td style={{ padding: 12 }}>
@@ -324,7 +317,9 @@ export default function Announce({ ui }) {
 
                   <div className="field">
                     <label>Category</label>
+                    {/* UPDATED: Added form-select class */}
                     <select 
+                        className="form-select"
                         value={form.category} 
                         onChange={e => setForm({...form, category: e.target.value})}
                     >
@@ -385,6 +380,7 @@ export default function Announce({ ui }) {
         </div>
       )}
 
+      {/* UPDATED: Enhanced styles */}
       <style>{`
         .tag {
           padding: 2px 8px;
@@ -404,6 +400,33 @@ export default function Announce({ ui }) {
         }
         .success { background-color: #52c41a; color: white; border: none; }
         .danger { background-color: #ff4d4f; color: white; border: none; }
+
+        /* UNIFIED SELECT STYLE */
+        .form-select {
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          background-color: #fff;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8.825L1.175 4 2.238 2.938 6 6.7 9.763 2.938 10.825 4z'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 10px center;
+          border: 1px solid #d9d9d9;
+          border-radius: 4px;
+          padding: 6px 30px 6px 12px;
+          font-size: 14px;
+          color: #333;
+          transition: all 0.2s;
+          outline: none;
+          height: 38px; 
+          width: 100%;
+        }
+        .form-select:focus {
+          border-color: #40a9ff;
+          box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+        .form-select:hover {
+          border-color: #40a9ff;
+        }
       `}</style>
     </section>
   )
