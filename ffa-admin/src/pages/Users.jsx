@@ -178,26 +178,29 @@ export default function Users({ ui }) {
         </div>
       </div>
 
-      {/* Filter & Search Bar */}
+{/* Filter & Search Bar */}
       <div className="panel" style={{ marginBottom: 12 }}>
         <div className="grid grid-3">
+          {/* Keyword Field */}
           <div className="field">
             <label>Keyword</label>
             <input 
-              placeholder="Search by name/email..." 
+              type="text"
+              placeholder="Name / Email / Login" 
               value={keyword} 
               onChange={e => setKeyword(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && loadPersons()}
             />
           </div>
           
+          {/* Role Field */}
           <div className="field">
             <label>Filter by Role</label>
             <select
               value={roleFilter}
               onChange={e => {
                 setRoleFilter(e.target.value)
-                setKeyword('') // Optional: clear keyword to avoid conflict
+                setKeyword('') 
               }}
             >
               <option value="ALL">All Roles</option>
@@ -207,8 +210,14 @@ export default function Users({ ui }) {
             </select>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
              <button className="btn primary" onClick={loadPersons}>Search</button>
+             <button className="btn ghost" onClick={() => {
+                setKeyword('');
+                setRoleFilter('ALL');
+                loadPersons();
+             }}>Reset</button>
           </div>
         </div>
       </div>
