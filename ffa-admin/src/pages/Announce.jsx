@@ -175,25 +175,25 @@ export default function Announce({ ui }) {
         </div>
       </div>
 
-      {/* --- Filters --- */}
-      <div className="panel" style={{ marginBottom: 16, padding: '12px 16px' }}>
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <label style={{ display: 'block', fontSize: 12, marginBottom: 4, color: '#666' }}>Search</label>
+{/* --- Filters --- */}
+      <div className="panel" style={{ marginBottom: 12 }}>
+        <div className="grid grid-4">
+          {/* Keyword Field */}
+          <div className="field">
+            <label>Keyword</label>
             <input 
-              style={{ width: '100%' }}
-              placeholder="Search title or content..." 
+              type="text"
+              placeholder="Title / Content" 
               value={filters.keyword} 
               onChange={e => setFilters({ ...filters, keyword: e.target.value })}
               onKeyDown={e => e.key === 'Enter' && loadAnnouncements()}
             />
           </div>
 
-          <div style={{ width: 150 }}>
-            <label style={{ display: 'block', fontSize: 12, marginBottom: 4, color: '#666' }}>Status</label>
+          {/* Status Field */}
+          <div className="field">
+            <label>Status</label>
             <select 
-              style={{ width: '100%' }}
               value={filters.status} 
               onChange={e => setFilters({ ...filters, status: e.target.value })}
             >
@@ -203,10 +203,10 @@ export default function Announce({ ui }) {
             </select>
           </div>
 
-          <div style={{ width: 150 }}>
-            <label style={{ display: 'block', fontSize: 12, marginBottom: 4, color: '#666' }}>Category</label>
+          {/* Category Field */}
+          <div className="field">
+            <label>Category</label>
             <select 
-              style={{ width: '100%' }}
               value={filters.category} 
               onChange={e => setFilters({ ...filters, category: e.target.value })}
             >
@@ -217,7 +217,14 @@ export default function Announce({ ui }) {
             </select>
           </div>
 
-          <button className="btn primary" onClick={loadAnnouncements}>Filter</button>
+          {/* Action Buttons - Aligned to bottom */}
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+            <button className="btn primary" onClick={loadAnnouncements}>Filter</button>
+            <button className="btn ghost" onClick={() => {
+              setFilters({ keyword: '', status: 'ALL', category: 'ALL' });
+              loadAnnouncements();
+            }}>Reset</button>
+          </div>
         </div>
       </div>
 
