@@ -73,10 +73,10 @@ export default function App(){
 
         <div className="content" style={isAuth ? {paddingInline:0, paddingTop:0} : {}}>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Redirect root to login */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
             
             <Route path="/dashboard" element={<Dashboard ui={ui} />} />
-            
             <Route path="/projects" element={<Projects ui={ui} />} />
             <Route path="/users" element={<Users ui={ui} />} />
             <Route path="/dicts" element={<Dicts ui={ui} />} />
@@ -88,7 +88,8 @@ export default function App(){
             <Route path="/reset" element={<Reset />} />
             <Route path="/register" element={<Register />} />
             
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            {/* Redirect unknown paths to login */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </div>
       </main>
