@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion' 
+import { Loader2 } from 'lucide-react' 
 import api from '../api/api'
 
 export default function Users({ ui }) {
@@ -71,7 +73,8 @@ export default function Users({ ui }) {
       ui.showToast(e?.response?.data?.message || 'Request failed')
       setPersons([])
     } finally {
-      setLoading(false)
+      // Smooth out rapid loading flicker
+      setTimeout(() => setLoading(false), 200)
     }
   }
 
@@ -109,16 +112,17 @@ export default function Users({ ui }) {
     }
   }
 
-  const deleteUser = (id, name) => {
-    ui.openConfirm(`Delete user ${name}?`, async () => {
-      try {
-        await api.delete(`/ffaAPI/admin/persons/${id}`)
-        ui.showToast('User deleted')
-        loadPersons()
-      } catch (e) {
-        ui.showToast(e?.response?.data?.message || 'Delete failed')
-      }
-    })
+  // Use window.confirm instead of ui.openConfirm
+  const deleteUser = async (id, name) => {
+    if (!window.confirm(`Delete user ${name}?`)) return
+    
+    try {
+      await api.delete(`/ffaAPI/admin/persons/${id}`)
+      ui.showToast('User deleted')
+      loadPersons()
+    } catch (e) {
+      ui.showToast(e?.response?.data?.message || 'Delete failed')
+    }
   }
 
   // Initial load
@@ -153,208 +157,254 @@ export default function Users({ ui }) {
   const getDisplayName = (p) => [p.firstName, p.lastName].filter(Boolean).join(' ') || p.login
 
   return (
-    <section id="page-users">
-      <div className="toolbar">
-        <div>
-          <div className="muted">User Management</div>
-          <div style={{ fontSize: 20, fontWeight: 700 }}>Users & Roles</div>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn" onClick={loadPersons} disabled={loading}>Refresh</button>
-          <button className="btn primary" onClick={openCreate}>New User</button>
-        </div>
-      </div>
+    <div className="users-page">
+       {/* CSS Styles - Unified with Announce.jsx (Transparent/Dark) */}
+       <style>{`
+        .users-page { padding: 20px; font-family: -apple-system, sans-serif; color: inherit; }
+        
+        /* Spin Animation */
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
 
-      {/* Filter & Search Bar */}
-      <div className="panel" style={{ marginBottom: 12 }}>
-        <div className="grid grid-3">
-          <div className="field">
-            <label>Keyword</label>
-            <input 
-              type="text"
-              placeholder="Name / Email / Login" 
-              value={keyword} 
-              onChange={e => setKeyword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && loadPersons()}
-            />
-          </div>
-          
-          <div className="field">
-            <label>Filter by Role</label>
-            {/* UPDATED: Added form-select class */}
-            <select
-              className="form-select"
-              value={roleFilter}
-              onChange={e => {
-                setRoleFilter(e.target.value)
-                setKeyword('') 
-              }}
-            >
-              <option value="ALL">All Roles</option>
-              {roles.map(r => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-             <button className="btn primary" onClick={loadPersons}>Search</button>
-             <button className="btn ghost" onClick={() => {
-                setKeyword('');
-                setRoleFilter('ALL');
-                loadPersons();
-             }}>Reset</button>
-          </div>
-        </div>
-      </div>
-
-      {/* Data Table */}
-      <div className="panel">
-        <table>
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Email</th>
-              <th>Login</th>
-              <th>Role</th>
-              <th style={{ width: 180 }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {persons.map(p => (
-              <tr key={p.id}>
-                <td><strong>{getDisplayName(p)}</strong></td>
-                <td>{p.email || '-'}</td>
-                <td>{p.login || '-'}</td>
-                <td>
-                  <span className="tag">
-                    {p.role ? p.role.name : (p.roleId ? 'Role #' + p.roleId : 'No Role')}
-                  </span>
-                </td>
-                <td>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn small" onClick={() => openEdit(p)}>Edit</button>
-                    <button className="btn small danger" onClick={() => deleteUser(p.id, getDisplayName(p))}>Delete</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {persons.length === 0 && !loading && (
-              <tr><td colSpan="5" style={{ textAlign: 'center', padding: 20 }}>No users found</td></tr>
-            )}
-            {loading && (
-                <tr><td colSpan="5" style={{ textAlign: 'center', padding: 20 }}>Loading...</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Edit/Create Form */}
-      {formOpen && (
-        <div id="user-form" className="panel" style={{ marginTop: 20, border: '2px solid #eee' }}>
-          <h3>{form.id ? 'Edit User' : 'Create New User'}</h3>
-          <div className="grid grid-2">
-            <div className="field">
-              <label>Login *</label>
-              <input 
-                value={form.login} 
-                onChange={e => setForm({ ...form, login: e.target.value })} 
-                disabled={!!form.id} 
-              />
-            </div>
-            <div className="field">
-              <label>Email *</label>
-              <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-            </div>
-            <div className="field">
-                <label>First Name</label>
-                <input value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} />
-            </div>
-            <div className="field">
-                <label>Last Name</label>
-                <input value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} />
-            </div>
-
-            <div className="field">
-              <label>Role *</label>
-              {/* UPDATED: Added form-select class */}
-              <select 
-                className="form-select"
-                value={form.roleId} 
-                onChange={e => setForm({ ...form, roleId: e.target.value })}
-              >
-                <option value="">-- Select Role --</option>
-                {roles.map(r => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="field">
-              <label>Password</label>
-              <input 
-                type="password"
-                placeholder={form.id ? 'Leave blank to keep unchanged' : 'Required'}
-                value={form.password} 
-                onChange={e => setForm({ ...form, password: e.target.value })} 
-              />
-            </div>
-          </div>
-          <div style={{ marginTop: 16, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button className="btn" onClick={() => setFormOpen(false)}>Cancel</button>
-            <button className="btn primary" onClick={onSave}>{form.id ? 'Save Changes' : 'Create User'}</button>
-          </div>
-        </div>
-      )}
-
-      {/* UPDATED: Added Style Block for Users.jsx */}
-      <style>{`
-        .tag {
-          padding: 2px 8px;
+        /* Toolbar: Transparent background, consistent with Announce */
+        .toolbar { 
+          display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; 
+          background: transparent; 
+          padding: 15px; border-radius: 8px;
+          border: 1px solid rgba(255,255,255,0.1);
+          align-items: center;
+        }
+        
+        /* Inputs: Dark/Transparent background */
+        .form-control, .form-select, input, textarea, select {
+          padding: 8px 12px; 
+          border: 1px solid #555; 
           border-radius: 4px;
-          font-size: 12px;
-          font-weight: 500;
-          background: #e6f7ff;
-          color: #1890ff;
-          border: 1px solid #91d5ff;
-          display: inline-block;
+          background: rgba(0, 0, 0, 0.2); 
+          color: inherit;
         }
-        .btn.small {
-          padding: 2px 8px;
-          font-size: 12px;
-          height: 28px;
-          line-height: 1;
-        }
-        .success { background-color: #52c41a; color: white; border: none; }
-        .danger { background-color: #ff4d4f; color: white; border: none; }
 
-        /* UNIFIED SELECT STYLE */
-        .form-select {
-          appearance: none;
-          -webkit-appearance: none;
-          -moz-appearance: none;
-          background-color: #fff;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8.825L1.175 4 2.238 2.938 6 6.7 9.763 2.938 10.825 4z'/%3E%3C/svg%3E");
-          background-repeat: no-repeat;
-          background-position: right 10px center;
-          border: 1px solid #d9d9d9;
-          border-radius: 4px;
-          padding: 6px 30px 6px 12px;
-          font-size: 14px;
-          color: #333;
-          transition: all 0.2s;
-          outline: none;
-          height: 38px;
-          width: 100%;
+        /* Buttons */
+        .btn {
+          padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;
+          font-weight: 500; transition: all 0.2s;
         }
-        .form-select:focus {
-          border-color: #40a9ff;
-          box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        .btn:hover { opacity: 0.9; }
+        .primary { background: #1890ff; color: white; }
+        .default { background: transparent; border: 1px solid #777; color: inherit; }
+        .success { background: #52c41a; color: white; }
+        .danger { background: #ff4d4f; color: white; }
+        .sm { padding: 4px 8px; font-size: 12px; }
+
+        /* Table: Transparent headers and cells */
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .data-table th, .data-table td {
+          border: 1px solid rgba(255,255,255,0.1); padding: 12px; text-align: left;
         }
-        .form-select:hover {
-          border-color: #40a9ff;
+        .data-table th { background: transparent; font-weight: 600; }
+        
+        /* Badges */
+        .role-badge {
+          padding: 2px 8px; border-radius: 10px; font-size: 12px;
+          background: rgba(24, 144, 255, 0.2); color: #1890ff; border: 1px solid #1890ff;
+        }
+        .role-badge.no-role {
+          background: rgba(153, 153, 153, 0.2); color: #999; border: 1px solid #777;
+        }
+
+        /* Form Container (Replaces Panel) - Dark Theme */
+        .form-container {
+          background: #1f1f1f; 
+          color: #e0e0e0;
+          padding: 25px;
+          border-radius: 8px; 
+          border: 1px solid #333;
+          margin-top: 20px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .form-header { font-size: 18px; font-weight: bold; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        
+        /* Grid for Form */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+        .form-group input, .form-group select { width: 100%; box-sizing: border-box; background: #2b2b2b; border: 1px solid #444; color: #fff; }
+        
+        .form-actions {
+          margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;
         }
       `}</style>
-    </section>
+
+      {/* 1. Top Toolbar & Filters */}
+      <div className="toolbar">
+        {/* Title Area */}
+        <div style={{ marginRight: 'auto' }}>
+          <div style={{ fontSize: '12px', opacity: 0.7 }}>User Management</div>
+          <div style={{ fontSize: '20px', fontWeight: 'bold' }}>Users & Roles</div>
+        </div>
+
+        {/* Filters */}
+        <input 
+          style={{ width: '200px' }}
+          placeholder="Name / Email / Login" 
+          value={keyword} 
+          onChange={e => setKeyword(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && loadPersons()}
+        />
+        
+        <select
+          style={{ width: '150px' }}
+          value={roleFilter}
+          onChange={e => {
+            setRoleFilter(e.target.value)
+            setKeyword('') 
+          }}
+        >
+          <option value="ALL">All Roles</option>
+          {roles.map(r => (
+            <option key={r.id} value={r.id}>{r.name}</option>
+          ))}
+        </select>
+
+        <button className="btn primary" onClick={loadPersons}>Search</button>
+        <button className="btn default" onClick={() => {
+            setKeyword('');
+            setRoleFilter('ALL');
+            loadPersons();
+        }}>Reset</button>
+
+        <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', height: '30px', margin: '0 10px' }}></div>
+
+        <button className="btn success" onClick={openCreate}>+ New User</button>
+      </div>
+
+      {/* 2. Data Table */}
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 60, color: '#666' }}>
+          <Loader2 className="animate-spin" size={24} />
+        </div>
+      ) : (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ duration: 0.3 }}
+        >
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Login</th>
+                <th>Role</th>
+                <th style={{ width: 180 }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {persons.length === 0 ? (
+                <tr><td colSpan="5" style={{ textAlign: 'center', color: '#999', padding: 20 }}>No users found</td></tr>
+              ) : (
+                persons.map(p => (
+                  <tr key={p.id}>
+                    <td><strong>{getDisplayName(p)}</strong></td>
+                    <td>{p.email || '-'}</td>
+                    <td>{p.login || '-'}</td>
+                    <td>
+                      <span className={`role-badge ${!p.role && !p.roleId ? 'no-role' : ''}`}>
+                        {p.role ? p.role.name : (p.roleId ? `Role #${p.roleId}` : 'No Role')}
+                      </span>
+                    </td>
+                    <td>
+                      <button className="btn sm primary" onClick={() => openEdit(p)} style={{ marginRight: 8 }}>Edit</button>
+                      <button className="btn sm danger" onClick={() => deleteUser(p.id, getDisplayName(p))}>Delete</button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </motion.div>
+      )}
+
+      {/* 3. Form Section (Styled like a dark card instead of generic panel) */}
+      <AnimatePresence>
+        {formOpen && (
+          <motion.div 
+            id="user-form" 
+            className="form-container"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="form-header">
+              {form.id ? 'Edit User' : 'Create New User'}
+            </div>
+            
+            <div className="form-grid">
+              {/* Left Column */}
+              <div>
+                <div className="form-group">
+                  <label>Login (Username) *</label>
+                  <input 
+                    value={form.login} 
+                    onChange={e => setForm({ ...form, login: e.target.value })} 
+                    disabled={!!form.id} 
+                    placeholder="e.g. jdoe"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email *</label>
+                  <input 
+                    value={form.email} 
+                    onChange={e => setForm({ ...form, email: e.target.value })} 
+                    placeholder="e.g. user@example.com"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Password</label>
+                  <input 
+                    type="password"
+                    placeholder={form.id ? 'Leave blank to keep unchanged' : 'Required for new user'}
+                    value={form.password} 
+                    onChange={e => setForm({ ...form, password: e.target.value })} 
+                  />
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div>
+                <div className="form-group">
+                  <label>First Name</label>
+                  <input value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>Last Name</label>
+                  <input value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>Role *</label>
+                  <select 
+                    value={form.roleId} 
+                    onChange={e => setForm({ ...form, roleId: e.target.value })}
+                  >
+                    <option value="">-- Select Role --</option>
+                    {roles.map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="form-actions">
+              <button className="btn default" onClick={() => setFormOpen(false)}>Cancel</button>
+              <button className="btn primary" onClick={onSave}>
+                {form.id ? 'Save Changes' : 'Create User'}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
