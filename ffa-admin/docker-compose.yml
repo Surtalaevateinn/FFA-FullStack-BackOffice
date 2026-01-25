@@ -8,9 +8,10 @@ services:
       # Inject build-time variables here
       args:
         # Matches the variable used in src/api/api.js
-        - VITE_API_BASE=https://ffa-aj0b.onrender.com/ffaAPI
+        - VITE_API_BASE=https://ffa-kftu.onrender.com/ffaAPI
     container_name: ffa-admin-container
     ports:
       # Maps host port 8080 to container port 80
       - "8080:80"
+
     restart: always
