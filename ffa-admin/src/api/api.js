@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_API_BASE || "https://ffa-aj0b.onrender.com/ffaAPI";
+const baseURL = import.meta.env.VITE_API_BASE || "https://ffa-kftu.onrender.com/ffaAPI";
 
 const api = axios.create({
   baseURL,
