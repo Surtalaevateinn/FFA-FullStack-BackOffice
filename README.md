@@ -19,3 +19,14 @@ http://localhost:5173/
 -   Password: Zds123456
 
 5.  Or just visit https://ffa-full-stack-back-office.vercel.app
+
+## 🐳 Deployment with Docker
+
+You can deploy this project using Docker. Ensure Docker and Docker Compose are installed on your machine.
+
+### 1. Build and Run (Recommended)
+
+Run the following command in the project root directory:
+
+```bash
+docker-compose up -d --build
