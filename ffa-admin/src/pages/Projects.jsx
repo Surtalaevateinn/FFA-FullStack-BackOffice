@@ -1,19 +1,21 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion"; 
-import { Loader2 } from "lucide-react";   
+import { motion, AnimatePresence } from "framer-motion"; 
+import { Loader2, Trophy, User } from "lucide-react";   
 import api from "../api/api";
 
 export default function Projects({ ui }) {
   // Data Source
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
+  // User Lookup Map (ID -> Name)
+  const [userMap, setUserMap] = useState({});
 
   // Filters
   const [kw, setKw] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   
-  // Form State
+  // Project Form State (Create/Edit)
   const emptyForm = { 
     id: null, 
     name: "", 
@@ -28,6 +30,12 @@ export default function Projects({ ui }) {
   const [form, setForm] = useState(emptyForm);
   const [formOpen, setFormOpen] = useState(false);
 
+  // Winner Selection State
+  const [winModalOpen, setWinModalOpen] = useState(false);
+  const [currentProject, setCurrentProject] = useState(null);
+  const [applicants, setApplicants] = useState([]);
+  const [loadingApps, setLoadingApps] = useState(false);
+
   // Helper: Error Message
   const getErrorMsg = (e, fallback = 'Request failed') => {
     return (
@@ -41,6 +49,26 @@ export default function Projects({ ui }) {
   const formatDate = (iso) => {
     if (!iso) return "-";
     return iso.substring(0, 10); // yyyy-MM-dd
+  };
+
+  // ============ API: Load Users for Lookup ============
+  const loadUsersForLookup = async () => {
+    try {
+      // Request a large page size to cover most users for lookup
+      const res = await api.get('/ffaAPI/admin/persons', { params: { page: 0, size: 1000 } }); 
+      if (res.data?.success) {
+        const list = res.data.data?.content || [];
+        const map = {};
+        list.forEach(u => {
+          // Combine names, fallback to login
+          const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.login;
+          map[u.id] = name;
+        });
+        setUserMap(map);
+      }
+    } catch (e) {
+      console.error("Failed to load user lookup", e);
+    }
   };
 
   // ============ API: Load List / Search ============
@@ -87,26 +115,58 @@ export default function Projects({ ui }) {
     } catch (e) {
       ui.showToast(getErrorMsg(e, "Load failed"));
     } finally {
-      // 稍微延迟一点点 loading 结束，防止闪烁太快，增加平滑感
+      // Delay loading state slightly to prevent flicker
       setTimeout(() => setLoading(false), 200); 
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { 
+    load(); 
+    loadUsersForLookup();
+  }, []);
 
-  // ============ API: Define Winner ============
-  const defineWinner = async (project) => {
-    const userIdStr = prompt(`Enter Winner User ID for project "${project.name}":`, project.winnerUserId || "");
-    if (userIdStr === null) return; // Cancelled
+  // ============ WINNER LOGIC START ============
+
+  // 1. Open Modal & Load Applications
+  const openWinnerModal = async (project) => {
+    setCurrentProject(project);
+    setWinModalOpen(true);
+    setApplicants([]);
+    setLoadingApps(true);
 
     try {
-      const res = await api.post(`/ffaAPI/admin/projects/${project.id}/winner`, null, {
-        params: { winnerUserId: userIdStr }
+      // Call the endpoint to get applications for this project
+      const res = await api.get(`/ffaAPI/admin/projects/${project.id}/applications`, {
+        params: { page: 0, size: 100 }
+      });
+
+      if (res.data?.success) {
+        const apps = res.data.data?.content || [];
+        setApplicants(apps);
+      } else {
+        ui.showToast(res.data?.message || "Failed to load applications");
+      }
+    } catch (e) {
+      ui.showToast(getErrorMsg(e, "Failed to load applications"));
+    } finally {
+      setLoadingApps(false);
+    }
+  };
+
+  // 2. Submit Selected Winner
+  const submitWinner = async (userId) => {
+    if (!currentProject) return;
+    if (!window.confirm(`Set selected user as winner?`)) return;
+
+    try {
+      const res = await api.post(`/ffaAPI/admin/projects/${currentProject.id}/winner`, null, {
+        params: { winnerUserId: userId }
       });
       
       if (res.data?.success) {
         ui.showToast("Winner defined successfully");
-        load(); 
+        setWinModalOpen(false);
+        load(); // Refresh list
       } else {
         ui.showToast(res.data?.message || "Failed to define winner");
       }
@@ -114,6 +174,18 @@ export default function Projects({ ui }) {
       ui.showToast(getErrorMsg(e, "Operation failed"));
     }
   };
+
+  // Helper to extract User ID from Application object safely
+  const getApplicantUserId = (app) => {
+    // Try common patterns: app.userId, app.user.id, app.user_id
+    if (app.userId) return app.userId;
+    if (app.user && app.user.id) return app.user.id;
+    if (app.user_id) return app.user_id;
+    return null;
+  };
+
+  // ============ WINNER LOGIC END ============
+
 
   // ============ API: Get Statistics ============
   const showStatistics = async (id) => {
@@ -204,7 +276,7 @@ export default function Projects({ ui }) {
 
   return (
     <div className="projects-page">
-      {/* CSS Styles - Added Animation Keyframes */}
+      {/* CSS Styles */}
       <style>{`
         .projects-page { padding: 20px; font-family: -apple-system, sans-serif; color: inherit; }
         
@@ -280,6 +352,18 @@ export default function Projects({ ui }) {
           width: 100%; box-sizing: border-box; background: #2b2b2b; border: 1px solid #444; color: #fff;
         }
         .modal-footer { text-align: right; margin-top: 20px; }
+
+        /* Applicant List in Modal */
+        .app-list { max-height: 300px; overflow-y: auto; border: 1px solid #333; border-radius: 4px; }
+        .app-item {
+          display: flex; justify-content: space-between; align-items: center;
+          padding: 10px; border-bottom: 1px solid #333; background: #262626;
+        }
+        .app-item:last-child { border-bottom: none; }
+        .app-item:hover { background: #333; }
+        .app-info { display: flex; flex-direction: column; }
+        .app-name { font-weight: bold; color: #fff; }
+        .app-meta { font-size: 12px; color: #999; }
       `}</style>
 
       {/* Toolbar */}
@@ -329,13 +413,14 @@ export default function Projects({ ui }) {
                 <th>Budget</th>
                 <th style={{ width: 100 }}>Start</th>
                 <th style={{ width: 100 }}>Submit</th>
+                <th style={{ width: 80 }}>Intervener</th>
                 <th style={{ width: 80 }}>Winner</th>
                 <th style={{ width: 200 }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <tr><td colSpan={8} style={{textAlign:'center', padding:40, color: '#999'}}>No projects found</td></tr>
+                <tr><td colSpan={9} style={{textAlign:'center', padding:40, color: '#999'}}>No projects found</td></tr>
               ) : (
                 rows.map(r => (
                   <tr key={r.id}>
@@ -355,11 +440,19 @@ export default function Projects({ ui }) {
                     <td>{formatDate(r.startDate)}</td>
                     <td>{formatDate(r.submissionDate)}</td>
                     <td>
-                      {r.winnerUserId ? <span style={{ color: '#52c41a' }}>User {r.winnerUserId}</span> : "-"}
+                        {r.intervenerId ? (userMap[r.intervenerId] || r.intervenerId) : "-"}
+                    </td>
+                    <td>
+                      {r.winnerUserId ? (
+                        <span style={{ color: '#52c41a', display:'flex', alignItems:'center', gap: 4 }}>
+                            <Trophy size={14} />
+                            {userMap[r.winnerUserId] || `User ${r.winnerUserId}`}
+                        </span>
+                      ) : "-"}
                     </td>
                     <td>
                       <button className="btn sm primary" onClick={() => openEdit(r)}>Edit</button>
-                      <button className="btn sm success" onClick={() => defineWinner(r)}>Win</button>
+                      <button className="btn sm success" onClick={() => openWinnerModal(r)}>Win</button>
                       <button className="btn sm default" onClick={() => showStatistics(r.id)}>Stat</button>
                       <button className="btn sm danger" onClick={() => onDelete(r.id)}>Del</button>
                     </td>
@@ -371,76 +464,147 @@ export default function Projects({ ui }) {
         </motion.div>
       )}
 
-      {/* Modal Editor (unchanged logic, only render) */}
-      {formOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              {form.id ? "Edit Project" : "New Project"}
-            </div>
-            
-            <div className="form-grid">
-              {/* Left Column */}
-              <div>
-                <div className="form-group">
-                  <label>Project Name *</label>
-                  <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Enter name"/>
-                </div>
-                
-                <div className="form-group">
-                  <label>Total Budget</label>
-                  <input type="number" value={form.totalBudget} onChange={e => setForm({...form, totalBudget: e.target.value})} placeholder="0.00"/>
+      {/* Project Editor Modal */}
+      <AnimatePresence>
+        {formOpen && (
+          <div className="modal-overlay">
+            <motion.div 
+              className="modal-content"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="modal-header">
+                {form.id ? "Edit Project" : "New Project"}
+              </div>
+              
+              <div className="form-grid">
+                {/* Left Column */}
+                <div>
+                  <div className="form-group">
+                    <label>Project Name *</label>
+                    <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Enter name"/>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>Total Budget</label>
+                    <input type="number" value={form.totalBudget} onChange={e => setForm({...form, totalBudget: e.target.value})} placeholder="0.00"/>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Start Date</label>
+                    <input type="date" value={form.startDate} onChange={e => setForm({...form, startDate: e.target.value})} />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Intervener ID</label>
+                    <input type="number" value={form.intervenerId} onChange={e => setForm({...form, intervenerId: e.target.value})} />
+                  </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Start Date</label>
-                  <input type="date" value={form.startDate} onChange={e => setForm({...form, startDate: e.target.value})} />
-                </div>
+                {/* Right Column */}
+                <div>
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
+                      <option value="DRAFT">Draft</option>
+                      <option value="PENDING_APPROVAL">Pending Approval</option>
+                      <option value="PUBLISHED">Published</option>
+                    </select>
+                  </div>
 
-                <div className="form-group">
-                  <label>Intervener ID</label>
-                  <input type="number" value={form.intervenerId} onChange={e => setForm({...form, intervenerId: e.target.value})} />
+                  <div className="form-group">
+                    <label>Submission Deadline</label>
+                    <input type="date" value={form.submissionDate} onChange={e => setForm({...form, submissionDate: e.target.value})} />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Winner User ID (Manual)</label>
+                    <input type="number" placeholder="Optional" value={form.winnerUserId} onChange={e => setForm({...form, winnerUserId: e.target.value})} />
+                  </div>
                 </div>
               </div>
 
-              {/* Right Column */}
-              <div>
-                 <div className="form-group">
-                  <label>Status</label>
-                  <select value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
-                    <option value="DRAFT">Draft</option>
-                    <option value="PENDING_APPROVAL">Pending Approval</option>
-                    <option value="PUBLISHED">Published</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Submission Deadline</label>
-                  <input type="date" value={form.submissionDate} onChange={e => setForm({...form, submissionDate: e.target.value})} />
-                </div>
-
-                <div className="form-group">
-                  <label>Winner User ID</label>
-                  <input type="number" placeholder="Optional" value={form.winnerUserId} onChange={e => setForm({...form, winnerUserId: e.target.value})} />
-                </div>
+              {/* Full Width */}
+              <div className="form-group" style={{ marginTop: 10 }}>
+                <label>Description</label>
+                <textarea rows={3} value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Project details..." />
               </div>
-            </div>
 
-            {/* Full Width */}
-            <div className="form-group" style={{ marginTop: 10 }}>
-              <label>Description</label>
-              <textarea rows={3} value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Project details..." />
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn default" onClick={() => setFormOpen(false)} style={{ marginRight: 10 }}>Cancel</button>
-              <button className="btn primary" onClick={onSave}>
-                {form.id ? "Save Changes" : "Create Project"}
-              </button>
-            </div>
+              <div className="modal-footer">
+                <button className="btn default" onClick={() => setFormOpen(false)} style={{ marginRight: 10 }}>Cancel</button>
+                <button className="btn primary" onClick={onSave}>
+                  {form.id ? "Save Changes" : "Create Project"}
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
+
+      {/* Winner Selection Modal */}
+      <AnimatePresence>
+        {winModalOpen && (
+          <div className="modal-overlay">
+            <motion.div 
+              className="modal-content" style={{ width: 500 }}
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              <div className="modal-header">
+                Select Winner for "{currentProject?.name}"
+              </div>
+
+              <div style={{ marginBottom: 15, color: '#aaa', fontSize: '13px' }}>
+                Select an applicant from the list below to declare them as the winner.
+              </div>
+
+              {loadingApps ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+                  <Loader2 className="animate-spin" size={24} />
+                </div>
+              ) : (
+                <div className="app-list">
+                  {applicants.length === 0 ? (
+                    <div style={{ padding: 20, textAlign: 'center', color: '#666' }}>
+                      No applications found for this project.
+                    </div>
+                  ) : (
+                    applicants.map(app => {
+                      const uid = getApplicantUserId(app);
+                      const name = uid ? (userMap[uid] || `User #${uid}`) : 'Unknown User';
+                      return (
+                        <div className="app-item" key={app.id}>
+                          <div className="app-info">
+                            <span className="app-name">
+                              <User size={12} style={{ marginRight: 5 }}/>
+                              {name}
+                            </span>
+                            <span className="app-meta">Applied: {formatDate(app.dateApplication)} | Status: {app.status}</span>
+                          </div>
+                          <button 
+                            className="btn sm success" 
+                            onClick={() => submitWinner(uid)}
+                            disabled={!uid}
+                          >
+                            Select Winner
+                          </button>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              )}
+
+              <div className="modal-footer">
+                <button className="btn default" onClick={() => setWinModalOpen(false)}>Close</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
