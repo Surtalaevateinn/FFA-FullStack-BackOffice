@@ -30,3 +30,5 @@ Run the following command in the project root directory:
 
 ```bash
 docker-compose up -d --build
+
+The application will be accessible at: http://localhost:8080
